@@ -38,10 +38,7 @@ class EncryptedSettings(object):
         return self.decrypted_secrets.get(name, self.secret_defaults.get(name))
 
     def get_all_secrets(self):
-        secrets = {}
-        for name in self.secret_names:
-            secrets[name] = self.get_secret(name)
-        return secrets
+        return {name: self.get_secret(name) for name in self.secret_names}
 
     def _bootstrap(self, secrets):
         """

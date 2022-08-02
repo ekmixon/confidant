@@ -51,9 +51,7 @@ class Service(Model):
             return False
         if set(self.blind_credentials) != set(other_service.blind_credentials):
             return False
-        if self.account != other_service.account:
-            return False
-        return True
+        return self.account == other_service.account
 
     def diff(self, other_service):
         if self.revision == other_service.revision:
@@ -91,14 +89,8 @@ class Service(Model):
 
     def _diff_list(self, old, new):
         diff = {}
-        removed = []
-        added = []
-        for key in old:
-            if key not in new:
-                removed.append(key)
-        for key in new:
-            if key not in old:
-                added.append(key)
+        removed = [key for key in old if key not in new]
+        added = [key for key in new if key not in old]
         if removed:
             diff['removed'] = sorted(removed)
         if added:

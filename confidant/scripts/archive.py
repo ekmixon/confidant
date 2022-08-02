@@ -48,25 +48,14 @@ class ArchiveCredentials(Command):
     ]
 
     def credential_in_service(self, _id, services):
-        for service in services:
-            if _id in service.credentials:
-                return True
-        return False
+        return any(_id in service.credentials for service in services)
 
     def save(self, saves, force=False):
         _saves = ', '.join([save.id for save in saves])
         if not force:
-            logger.info(
-                'Would have archived credential and revisions: {}'.format(
-                    _saves,
-                )
-            )
+            logger.info(f'Would have archived credential and revisions: {_saves}')
             return
-        logger.info(
-            'Archiving credential and revisions: {}'.format(
-                _saves,
-            )
-        )
+        logger.info(f'Archiving credential and revisions: {_saves}')
         with CredentialArchive.batch_write() as batch:
             for save in saves:
                 batch.save(save)
@@ -75,17 +64,9 @@ class ArchiveCredentials(Command):
     def delete(self, deletes, force=False):
         _deletes = ', '.join([delete.id for delete in deletes])
         if not force:
-            logger.info(
-                'Would have deleted credential and revisions: {}'.format(
-                    _deletes,
-                )
-            )
+            logger.info(f'Would have deleted credential and revisions: {_deletes}')
             return
-        logger.info(
-            'Deleting credential and revisions: {}'.format(
-                _deletes,
-            )
-        )
+        logger.info(f'Deleting credential and revisions: {_deletes}')
         with Credential.batch_write() as batch:
             for delete in deletes:
                 batch.delete(delete)
@@ -99,13 +80,12 @@ class ArchiveCredentials(Command):
                        ' is still mapped to a service.')
                 logger.warning(msg.format(credential.id))
                 continue
-            saves = []
             deletes = []
             # save the current record.
             archive_credential = CredentialArchive.from_credential(
                 credential,
             )
-            saves.append(archive_credential)
+            saves = [archive_credential]
             # fetch and save every revision
             revisions = Credential.batch_get(
                 credentialmanager.get_revision_ids_for_credential(credential)
@@ -120,19 +100,13 @@ class ArchiveCredentials(Command):
             try:
                 self.save(saves, force=force)
             except Exception:
-                logger.exception(
-                    'Failed to batch save {}, skipping deletion.'.format(
-                        credential.id
-                    )
-                )
+                logger.exception(f'Failed to batch save {credential.id}, skipping deletion.')
                 stats.incr('archive.save.failure')
                 continue
             try:
                 self.delete(deletes, force=force)
             except Exception:
-                logger.exception(
-                    'Failed to batch delete {}'.format(credential.id)
-                )
+                logger.exception(f'Failed to batch delete {credential.id}')
                 stats.incr('archive.delete.failure')
 
     def run(self, days, force, ids):
@@ -154,9 +128,7 @@ class ArchiveCredentials(Command):
                 return 1
             for credential in Credential.batch_get(_ids):
                 if credential.enabled:
-                    logger.warning(
-                        'Skipping enabled credential {}'.format(credential.id)
-                    )
+                    logger.warning(f'Skipping enabled credential {credential.id}')
                     continue
                 credentials.append(credential)
         else:

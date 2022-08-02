@@ -17,9 +17,7 @@ logger.setLevel(logging.INFO)
 
 
 def is_old_unicode_set(values):
-    if not values:
-        return False
-    return sum([x.startswith('"') for x in values]) > 0
+    return sum(x.startswith('"') for x in values) > 0 if values else False
 
 
 class SetMixin(object):
@@ -47,7 +45,7 @@ class SetMixin(object):
         Deserializes a set
         """
         if value and len(value):
-            return set([json.loads(val) for val in value])
+            return {json.loads(val) for val in value}
 
 
 class NewUnicodeSetAttribute(SetMixin, Attribute):
@@ -64,9 +62,7 @@ class NewUnicodeSetAttribute(SetMixin, Attribute):
         :param value:
         :return:
         """
-        if isinstance(value, six.text_type):
-            return value
-        return six.u(str(value))
+        return value if isinstance(value, six.text_type) else six.u(str(value))
 
     def element_deserialize(self, value):
         return value
@@ -83,7 +79,7 @@ class NewUnicodeSetAttribute(SetMixin, Attribute):
 
     def deserialize(self, value):
         if value and len(value):
-            return set([self.element_deserialize(val) for val in value])
+            return {self.element_deserialize(val) for val in value}
 
 
 class GeneralCredentialModel(Model):
@@ -116,7 +112,7 @@ class MigrateBlindCredentialSetAttribute(Command):
             if is_old_unicode_set(new_cred.credential_keys):
                 fail += 1
             total += 1
-        logger.info("Fail: {}, Total: {}".format(fail, total))
+        logger.info(f"Fail: {fail}, Total: {total}")
 
 
 class MigrateServiceSetAttribute(Command):
@@ -133,4 +129,4 @@ class MigrateServiceSetAttribute(Command):
                     is_old_unicode_set(new_service.blind_credentials)):
                 fail += 1
             total += 1
-        logger.info("Fail: {}, Total: {}".format(fail, total))
+        logger.info(f"Fail: {fail}, Total: {total}")

@@ -31,9 +31,7 @@ def bool_env(var_name, default=False):
     test_val = getenv(var_name, default)
     # Explicitly check for 'False', 'false', and '0' since all non-empty
     # string are normally coerced to True.
-    if test_val in ('False', 'false', '0'):
-        return False
-    return bool(test_val)
+    return False if test_val in ('False', 'false', '0') else bool(test_val)
 
 
 def float_env(var_name, default=0.0):
@@ -510,69 +508,66 @@ for ca in ACM_PRIVATE_CAS:
     ca = ca.strip()
     # We require environment to be all uppercase, including the CA name.
     ca_up = ca.upper()
-    ca_settings = {}
-    # The full ARN of the private CA
-    ca_settings['arn'] = str_env('ACM_PRIVATE_CA_ARN_{}'.format(ca_up))
+    ca_settings = {'arn': str_env(f'ACM_PRIVATE_CA_ARN_{ca_up}')}
     # The signing algorithm to use when calling issue certificate in ACM
     ca_settings['signing_algorithm'] = str_env(
-        'ACM_PRIVATE_CA_SIGNING_ALGORITHM_{}'.format(ca_up),
-        'SHA256WITHRSA',
+        f'ACM_PRIVATE_CA_SIGNING_ALGORITHM_{ca_up}', 'SHA256WITHRSA'
     )
+
     # The full ARN of the certificate template used when issuing certificates.
     # The default value used here allows for client and server authentication.
     ca_settings['template_arn'] = str_env(
-        'ACM_PRIVATE_CA_TEMPLATE_ARN_{}'.format(ca_up),
+        f'ACM_PRIVATE_CA_TEMPLATE_ARN_{ca_up}',
         'arn:aws:acm-pca:::template/EndEntityCertificate/V1',
     )
+
     # Maximum validity of certificates issued from the private CA. If clients
     # request a higher validity period, we'll set the validity to this value.
     ca_settings['max_validity_days'] = int_env(
-        'ACM_PRIVATE_CA_MAX_VALIDITY_DAYS_{}'.format(ca_up),
-        120,
+        f'ACM_PRIVATE_CA_MAX_VALIDITY_DAYS_{ca_up}', 120
     )
+
     # Attributes to use when generating CSRs
     ca_settings['csr_country_name'] = str_env(
-        'ACM_PRIVATE_CA_CSR_COUNTRY_NAME_{}'.format(ca_up),
+        f'ACM_PRIVATE_CA_CSR_COUNTRY_NAME_{ca_up}'
     )
+
     ca_settings['csr_state_or_province_name'] = str_env(
-        'ACM_PRIVATE_CA_CSR_STATE_OR_PROVINCE_NAME_{}'.format(ca_up),
+        f'ACM_PRIVATE_CA_CSR_STATE_OR_PROVINCE_NAME_{ca_up}'
     )
+
     ca_settings['csr_locality_name'] = str_env(
-        'ACM_PRIVATE_CA_CSR_LOCALITY_NAME_{}'.format(ca_up),
+        f'ACM_PRIVATE_CA_CSR_LOCALITY_NAME_{ca_up}'
     )
+
     ca_settings['csr_organization_name'] = str_env(
-        'ACM_PRIVATE_CA_CSR_ORGANIZATION_NAME_{}'.format(ca_up),
+        f'ACM_PRIVATE_CA_CSR_ORGANIZATION_NAME_{ca_up}'
     )
+
     # Whether we generate self-signed certificates, or issue certificates from
     # the private CA. This is intended for testing and development purposes.
-    ca_settings['self_sign'] = bool_env(
-        'ACM_PRIVATE_CA_SELF_SIGN_{}'.format(ca_up),
-        False,
-    )
+    ca_settings['self_sign'] = bool_env(f'ACM_PRIVATE_CA_SELF_SIGN_{ca_up}', False)
     # Size of private keys generated.
-    ca_settings['key_size'] = int_env(
-        'ACM_PRIVATE_CA_KEY_SIZE_{}'.format(ca_up),
-        2048,
-    )
+    ca_settings['key_size'] = int_env(f'ACM_PRIVATE_CA_KEY_SIZE_{ca_up}', 2048)
     # Exponent size used when generating keys. You probably don't want to change
     # this.
     ca_settings['key_public_exponent_size'] = int_env(
-        'ACM_PRIVATE_CA_KEY_PUBLIC_EXPONENT_SIZE_{}'.format(ca_up),
-        65537,
+        f'ACM_PRIVATE_CA_KEY_PUBLIC_EXPONENT_SIZE_{ca_up}', 65537
     )
+
     # Whether or not to cache certificates, when generating key/csr/certificates
     # and calling into ACM private CA to issue certificates.
     ca_settings['certificate_use_cache'] = bool_env(
-        'ACM_PRIVATE_CA_CERTIFICATE_USE_CACHE_{}'.format(ca_up),
-        False,
+        f'ACM_PRIVATE_CA_CERTIFICATE_USE_CACHE_{ca_up}', False
     )
+
     # Number of certificates to cache, when generating key/csr/certificates and
     # calling into ACM private CA to issue certificates. This should be high
     # enough to cache all concurrent certificates being issued at one time.
     ca_settings['certificate_cache_size'] = int_env(
-        'ACM_PRIVATE_CA_CERTIFICATE_CACHE_SIZE_{}'.format(ca_up),
-        1028,
+        f'ACM_PRIVATE_CA_CERTIFICATE_CACHE_SIZE_{ca_up}', 1028
     )
+
     # A regex to match against CN and SAN values for this CA. This regex must
     # include a named group for service_name: (?P<service_name>)
     # If no named group is defined, then the default ACL will deny generation
@@ -583,9 +578,7 @@ for ca in ACM_PRIVATE_CAS:
     #     Example: (?P<service_name>[\w-]+)\.example\.com
     #     Example match: test-service.example.com
     #     service_name from example: test-service
-    ca_settings['name_regex'] = str_env(
-        'ACM_PRIVATE_CA_DOMAIN_REGEX_{}'.format(ca_up),
-    )
+    ca_settings['name_regex'] = str_env(f'ACM_PRIVATE_CA_DOMAIN_REGEX_{ca_up}')
     ACM_PRIVATE_CA_SETTINGS[ca] = ca_settings
 
 

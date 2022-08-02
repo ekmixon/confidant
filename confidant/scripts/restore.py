@@ -58,26 +58,14 @@ class RestoreCredentials(Command):
         # We do this check at the point of all saves so that we can
         # restore revisions, if one of them failed to restore for some
         # reason.
-        _saves = []
-        for save in saves:
-            if self.credential_exists(save.id):
-                continue
-            _saves.append(save)
+        _saves = [save for save in saves if not self.credential_exists(save.id)]
         if not _saves:
             return
         save_msg = ', '.join([save.id for save in _saves])
         if not force:
-            logger.info(
-                'Would have restored credential and revisions: {}'.format(
-                    save_msg,
-                )
-            )
+            logger.info(f'Would have restored credential and revisions: {save_msg}')
             return
-        logger.info(
-            'Restoring credential and revisions: {}'.format(
-                save_msg,
-            )
-        )
+        logger.info(f'Restoring credential and revisions: {save_msg}')
         with Credential.batch_write() as batch:
             for save in _saves:
                 batch.save(save)
@@ -85,17 +73,14 @@ class RestoreCredentials(Command):
 
     def restore(self, archive_credentials, force):
         for archive_credential in archive_credentials:
-            saves = []
             # restore the current record
             credential = Credential.from_archive_credential(
                 archive_credential,
             )
-            saves.append(credential)
+            saves = [credential]
             # fetch and restore every revision
             _range = range(1, credential.revision + 1)
-            ids = []
-            for i in _range:
-                ids.append("{0}-{1}".format(credential.id, i))
+            ids = ["{0}-{1}".format(credential.id, i) for i in _range]
             archive_revisions = CredentialArchive.batch_get(ids)
             for archive_revision in archive_revisions:
                 revision = Credential.from_archive_credential(
@@ -105,11 +90,7 @@ class RestoreCredentials(Command):
             try:
                 self.save(saves, force=force)
             except Exception:
-                logger.exception(
-                    'Failed to batch save {}.'.format(
-                        credential.id
-                    )
-                )
+                logger.exception(f'Failed to batch save {credential.id}.')
                 stats.incr('restore.save.failure')
                 continue
 

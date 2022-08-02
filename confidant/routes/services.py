@@ -65,9 +65,7 @@ def get_iam_roles_list():
     """
     if not acl_module_check(resource_type='service',
                             action='list'):
-        msg = "{} does not have access to list services".format(
-            authnz.get_logged_in_user()
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to list services"
         error_msg = {'error': msg}
         return jsonify(error_msg), 403
 
@@ -123,9 +121,7 @@ def get_service_list():
     """
     if not acl_module_check(resource_type='service',
                             action='list'):
-        msg = "{} does not have access to list services".format(
-            authnz.get_logged_in_user()
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to list services"
         error_msg = {'error': msg}
         return jsonify(error_msg), 403
     services_response = ServicesResponse.from_services(
@@ -201,39 +197,31 @@ def get_service(id):
     :statuscode 403: Client does not have permissions to get the service ID
                      provided.
     '''
-    permissions = {
-        'metadata': False,
-        'get': False,
-        'update': False,
-    }
     metadata_only = misc.get_boolean(request.args.get('metadata_only'))
     logged_in_user = authnz.get_logged_in_user()
     action = 'metadata' if metadata_only else 'get'
-    permissions['metadata'] = acl_module_check(
-        resource_type='service',
-        action='metadata',
-        resource_id=id,
-    )
+    permissions = {
+        'get': False,
+        'update': False,
+        'metadata': acl_module_check(
+            resource_type='service', action='metadata', resource_id=id
+        ),
+    }
+
     permissions['get'] = acl_module_check(
         resource_type='service',
         action='get',
         resource_id=id,
     )
     if not permissions[action]:
-        msg = "{} does not have access to get service {}".format(
-            authnz.get_logged_in_user(),
-            id
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to get service {id}"
         error_msg = {'error': msg, 'reference': id}
         return jsonify(error_msg), 403
 
     logger.info(
-        'get_service called on id={} by user={} metadata_only={}'.format(
-            id,
-            logged_in_user,
-            metadata_only,
-        )
+        f'get_service called on id={id} by user={logged_in_user} metadata_only={metadata_only}'
     )
+
     try:
         service = Service.get(id)
         if not authnz.service_in_account(service.account):
@@ -244,8 +232,7 @@ def get_service(id):
             return jsonify({'error': msg}), 401
     except DoesNotExist:
         return jsonify({}), 404
-    if (service.data_type != 'service' and
-            service.data_type != 'archive-service'):
+    if service.data_type not in ['service', 'archive-service']:
         return jsonify({}), 404
     logger.debug('Authz succeeded for service {0}.'.format(id))
     try:
@@ -335,10 +322,8 @@ def get_archive_service_revisions(id):
     if not acl_module_check(resource_type='service',
                             action='metadata',
                             resource_id=id):
-        msg = "{} does not have access to service {} revisions".format(
-            authnz.get_logged_in_user(),
-            id
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to service {id} revisions"
+
         error_msg = {'error': msg}
         return jsonify(error_msg), 403
     try:
@@ -348,13 +333,10 @@ def get_archive_service_revisions(id):
             'Item with id {0} does not exist.'.format(id)
         )
         return jsonify({}), 404
-    if (service.data_type != 'service' and
-            service.data_type != 'archive-service'):
+    if service.data_type not in ['service', 'archive-service']:
         return jsonify({}), 404
     _range = range(1, service.revision + 1)
-    ids = []
-    for i in _range:
-        ids.append("{0}-{1}".format(id, i))
+    ids = ["{0}-{1}".format(id, i) for i in _range]
     revisions_response = RevisionsResponse.from_services(
         Service.batch_get(ids)
     )
@@ -409,9 +391,7 @@ def get_archive_service_list():
     """
     if not acl_module_check(resource_type='service',
                             action='list'):
-        msg = "{} does not have access to list services".format(
-            authnz.get_logged_in_user()
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to list services"
         error_msg = {'error': msg}
         return jsonify(error_msg), 403
     limit = request.args.get(
@@ -433,9 +413,9 @@ def get_archive_service_list():
         last_evaluated_key=page,
     )
     services_response = ServicesResponse.from_services(
-        [service for service in results],
-        next_page=results.last_evaluated_key,
+        list(results), next_page=results.last_evaluated_key
     )
+
     return services_response_schema.dumps(services_response)
 
 
@@ -534,10 +514,8 @@ def map_service_credentials(id):
           action='create',
           resource_id=id,
     ):
-        msg = "{} does not have access to create service {}".format(
-            authnz.get_logged_in_user(),
-            id
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to create service {id}"
+
         error_msg = {'error': msg, 'reference': id}
         return jsonify(error_msg), 403
 
@@ -559,11 +537,10 @@ def map_service_credentials(id):
         error_msg = {'error': msg, 'reference': id}
         return jsonify(error_msg), 403
 
-    conflicts = credentialmanager.pair_key_conflicts_for_credentials(
+    if conflicts := credentialmanager.pair_key_conflicts_for_credentials(
         credentials,
         blind_credentials,
-    )
-    if conflicts:
+    ):
         ret = {
             'error': 'Conflicting key pairs in mapped service.',
             'conflicts': conflicts
@@ -695,10 +672,8 @@ def revert_service_to_revision(id, to_revision):
     if not acl_module_check(resource_type='service',
                             action='revert',
                             resource_id=id):
-        msg = "{} does not have access to revert service {}".format(
-            authnz.get_logged_in_user(),
-            id
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to revert service {id}"
+
         error_msg = {'error': msg, 'reference': id}
         return jsonify(error_msg), 403
 
@@ -717,7 +692,7 @@ def revert_service_to_revision(id, to_revision):
         current_service.revision
     )
     try:
-        revert_service = Service.get('{}-{}'.format(id, to_revision))
+        revert_service = Service.get(f'{id}-{to_revision}')
     except DoesNotExist:
         logger.warning(
             'Item with id {0} does not exist.'.format(id)
@@ -727,11 +702,10 @@ def revert_service_to_revision(id, to_revision):
         msg = 'id provided is not a service.'
         return jsonify({'error': msg}), 400
     if revert_service.credentials or revert_service.blind_credentials:
-        conflicts = credentialmanager.pair_key_conflicts_for_credentials(
+        if conflicts := credentialmanager.pair_key_conflicts_for_credentials(
             revert_service.credentials,
             revert_service.blind_credentials,
-        )
-        if conflicts:
+        ):
             ret = {
                 'error': 'Conflicting key pairs in mapped service.',
                 'conflicts': conflicts
@@ -863,22 +837,20 @@ def diff_service(id, old_revision, new_revision):
     if not acl_module_check(resource_type='service',
                             action='metadata',
                             resource_id=id):
-        msg = "{} does not have access to diff service {}".format(
-            authnz.get_logged_in_user(),
-            id
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to diff service {id}"
+
         error_msg = {'error': msg, 'reference': id}
         return jsonify(error_msg), 403
 
     try:
-        old_service = Service.get('{}-{}'.format(id, old_revision))
+        old_service = Service.get(f'{id}-{old_revision}')
     except DoesNotExist:
         return jsonify({'error': 'Service not found.'}), 404
     if old_service.data_type != 'archive-service':
         msg = 'id provided is not a service.'
         return jsonify({'error': msg}), 400
     try:
-        new_service = Service.get('{}-{}'.format(id, new_revision))
+        new_service = Service.get(f'{id}-{new_revision}')
     except DoesNotExist:
         logger.warning(
             'Item with id {0} does not exist.'.format(id)

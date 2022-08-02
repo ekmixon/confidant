@@ -195,9 +195,7 @@ def migrate_boolean_attributes(model_class,
             )):
         items_processed += 1
         if items_processed % 1000 == 0:
-            logger.info(
-                'processed items: {} Thousand'.format(items_processed/1000)
-            )
+            logger.info(f'processed items: {items_processed / 1000} Thousand')
 
         actions, condition = _build_actions(model_class, item, attribute_names)
 
@@ -226,14 +224,13 @@ def migrate_boolean_attributes(model_class,
                 time.sleep(number_of_secs_to_back_off)
 
     logger.info(
-        'finished migrating; {} items required updates'.format(
-            num_items_with_actions
-        )
+        f'finished migrating; {num_items_with_actions} items required updates'
     )
+
     logger.info(
-        '{} items failed due to racing writes and/or exceeding capacity and '
-        'require re-running migration'.format(num_update_failures)
+        f'{num_update_failures} items failed due to racing writes and/or exceeding capacity and require re-running migration'
     )
+
     return num_items_with_actions, num_update_failures
 
 
@@ -294,12 +291,9 @@ class MigrateBooleanAttribute(Command):
             scan_without_rcu):
         attributes = ['enabled']
         logger.info(
-            'RCU: {}, Page Size: {}, Limit: {}, Back off: {}, '
-            'Max update rate: {}, Attributes: {}'.format(
-                RCU, page_size, limit, back_off, update_rate,
-                attributes
-            )
+            f'RCU: {RCU}, Page Size: {page_size}, Limit: {limit}, Back off: {back_off}, Max update rate: {update_rate}, Attributes: {attributes}'
         )
+
         model = GenericCredential
         res = migrate_boolean_attributes(
             model,

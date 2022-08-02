@@ -26,11 +26,7 @@ def default_acl(*args, **kwargs):
     resource_id = kwargs.get('resource_id')
     resource_kwargs = kwargs.get('kwargs')
     if authnz.user_is_user_type('user'):
-        if resource_type == 'certificate':
-            return False
-        elif resource_type == 'ca':
-            return False
-        return True
+        return resource_type not in ['certificate', 'ca']
     elif authnz.user_is_user_type('service'):
         if resource_type == 'service' and action in ['metadata', 'get']:
             # Does the resource ID match the authenticated username?
@@ -52,7 +48,7 @@ def default_acl(*args, **kwargs):
                 match = cert_pattern.match(domain)
                 if not match:
                     return False
-                service_name = match.group('service_name')
+                service_name = match['service_name']
                 if not service_name:
                     return False
                 if not authnz.user_is_service(service_name):

@@ -82,8 +82,8 @@ class CertificateCache(object):
         certificate cache. The current day is included in the id, to ensure
         cache invalidation (minumum validity is 1 day).
         """
-        date = datetime.datetime.today().strftime('%Y-%m-%d')
-        return '{}{}{}{}'.format(cn, validity, san, date)
+        date = datetime.datetime.now().strftime('%Y-%m-%d')
+        return f'{cn}{validity}{san}{date}'
 
 
 class CertificateCacheNoOp(object):
@@ -129,12 +129,11 @@ class CertificateAuthority(object):
         """
         Generate and return a private RSA key object
         """
-        key = rsa.generate_private_key(
+        return rsa.generate_private_key(
             public_exponent=self.settings['key_public_exponent_size'],
             key_size=self.settings['key_size'],
-            backend=default_backend()
+            backend=default_backend(),
         )
-        return key
 
     def encode_key(self, key):
         """
@@ -220,8 +219,7 @@ class CertificateAuthority(object):
         From the provided csr object, return the string value of the common
         name attribute.
         """
-        cns = csr.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
-        if cns:
+        if cns := csr.subject.get_attributes_for_oid(NameOID.COMMON_NAME):
             # get_attributes_for_oid returns a list, but there should only be a
             # single cn attribute, so just return the first item.
             return cns[0].value
@@ -240,18 +238,14 @@ class CertificateAuthority(object):
         except ExtensionNotFound:
             san = None
         if san:
-            for dns_name in san.value:
-                dns_names.append(dns_name.value)
+            dns_names.extend(dns_name.value for dns_name in san.value)
         return dns_names
 
     def encode_san_dns_names(self, san):
         """
         Return a list of x509.DNSName attributes from a list of strings.
         """
-        dns_names = []
-        for dns_name in san:
-            dns_names.append(x509.DNSName(dns_name))
-        return dns_names
+        return [x509.DNSName(dns_name) for dns_name in san]
 
     def generate_self_signed_certificate(self, key, cn, validity, san=None):
         """
@@ -346,10 +340,9 @@ class CertificateAuthority(object):
         """
         with stats.timer('issue_certificate_with_key'):
             cache_id = self.cache.get_cache_id(cn, validity, san)
-            cached_response = self._get_cached_certificate_with_key(cache_id)
-            if cached_response:
+            if cached_response := self._get_cached_certificate_with_key(cache_id):
                 stats.incr('get_cached_certificate_with_key.hit')
-                logger.debug('Used cached response for {}'.format(cache_id))
+                logger.debug(f'Used cached response for {cache_id}')
                 return cached_response
             stats.incr('get_cached_certificate_with_key.miss')
             key = self.generate_key()
@@ -402,11 +395,7 @@ class CertificateAuthority(object):
                     # Sleep for a maximum of 10 seconds
                     if i >= 50:
                         raise
-                    logger.debug(
-                        'Sleeping in get_certificate_from_arn for {}'.format(
-                            certificate_arn,
-                        )
-                    )
+                    logger.debug(f'Sleeping in get_certificate_from_arn for {certificate_arn}')
                     time.sleep(.200)
                     i = i + 1
             return {
@@ -427,9 +416,7 @@ class CertificateAuthority(object):
         tags = client.list_tags(
             CertificateAuthorityArn=self.settings['arn'],
         )
-        _tags = {}
-        for tag in tags['Tags']:
-            _tags[tag['Key']] = tag['Value']
+        _tags = {tag['Key']: tag['Value'] for tag in tags['Tags']}
         return {
             'ca': self.ca_name,
             'certificate': certificate['Certificate'],

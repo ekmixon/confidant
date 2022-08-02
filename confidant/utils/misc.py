@@ -31,9 +31,7 @@ def load_module(module_path):
     """
     module_name, function_name = module_path.split(':')
     module = importlib.import_module(module_name)
-    function = getattr(module, function_name)
-
-    return function
+    return getattr(module, function_name)
 
 
 def get_boolean(val, default=False):
@@ -42,9 +40,7 @@ def get_boolean(val, default=False):
     Python's bool() does not behave as expected for strings so we
     have a helper function here
     """
-    if val is None:
-        return default
-    return val in ['True', 'true', '1']
+    return default if val is None else val in ['True', 'true', '1']
 
 
 def utcnow():

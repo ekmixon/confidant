@@ -80,9 +80,7 @@ class Credential(CredentialBase):
             return False
         if self.documentation != other_cred.documentation:
             return False
-        if set(self.tags) != set(other_cred.tags):
-            return False
-        return True
+        return set(self.tags) == set(other_cred.tags)
 
     def diff(self, other_cred):
         if self.revision == other_cred.revision:
@@ -144,9 +142,7 @@ class Credential(CredentialBase):
                 # modified is indicated by a remove and add
                 removed.append(key)
                 added.append(key)
-        for key, value in new.items():
-            if key not in old:
-                added.append(key)
+        added.extend(key for key, value in new.items() if key not in old)
         if removed:
             diff['removed'] = sorted(removed)
         if added:
@@ -158,10 +154,7 @@ class Credential(CredentialBase):
         return list(self.decrypted_credential_pairs)
 
     def _get_decrypted_credential_pairs(self):
-        if self.data_type == 'credential':
-            context = self.id
-        else:
-            context = self.id.split('-')[0]
+        context = self.id if self.data_type == 'credential' else self.id.split('-')[0]
         data_key = keymanager.decrypt_datakey(
             self.data_key,
             encryption_context={'id': context}

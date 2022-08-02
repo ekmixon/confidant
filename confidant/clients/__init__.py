@@ -27,9 +27,8 @@ def get_boto_client(
         aws_access_key_id,
         config.get('name')
     )
-    if not aws_session_token:
-        if cache_key in CLIENT_CACHE:
-            return CLIENT_CACHE[cache_key]
+    if not aws_session_token and cache_key in CLIENT_CACHE:
+        return CLIENT_CACHE[cache_key]
     session = get_boto_session(
         region,
         aws_access_key_id,
@@ -66,9 +65,8 @@ def get_boto_resource(
         aws_access_key_id,
         config.get('name')
     )
-    if not aws_session_token:
-        if cache_key in RESOURCE_CACHE:
-            return RESOURCE_CACHE[cache_key]
+    if not aws_session_token and cache_key in RESOURCE_CACHE:
+        return RESOURCE_CACHE[cache_key]
     session = get_boto_session(
         region,
         aws_access_key_id,

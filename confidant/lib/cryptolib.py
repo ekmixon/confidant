@@ -69,8 +69,7 @@ def load_x509_certificate_pem(path):
     """
 
     with open(path, 'rb') as f:
-        cert = x509.load_pem_x509_certificate(f.read(), default_backend())
-        return cert
+        return x509.load_pem_x509_certificate(f.read(), default_backend())
 
 
 def load_x509_certificate_pem_as_bare_base64(path):

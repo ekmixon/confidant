@@ -7,19 +7,19 @@ from confidant.models.service import Service
 
 
 def get_services_for_credential(_id):
-    services = []
-    for service in Service.data_type_date_index.query('service'):
-        if _id in service.credentials:
-            services.append(service)
-    return services
+    return [
+        service
+        for service in Service.data_type_date_index.query('service')
+        if _id in service.credentials
+    ]
 
 
 def get_services_for_blind_credential(_id):
-    services = []
-    for service in Service.data_type_date_index.query('service'):
-        if _id in service.blind_credentials:
-            services.append(service)
-    return services
+    return [
+        service
+        for service in Service.data_type_date_index.query('service')
+        if _id in service.blind_credentials
+    ]
 
 
 def get_service_map(services):
@@ -89,10 +89,7 @@ def pair_key_conflicts_for_services(_id, credential_keys, services):
 
 
 def send_service_mapping_graphite_event(new_service, old_service):
-    if old_service:
-        old_credential_ids = old_service.credentials
-    else:
-        old_credential_ids = []
+    old_credential_ids = old_service.credentials if old_service else []
     added = list(set(new_service.credentials) - set(old_credential_ids))
     removed = list(set(old_credential_ids) - set(new_service.credentials))
     msg = 'Added credentials: {0}; Removed credentials {1}; Revision {2}'

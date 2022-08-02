@@ -52,28 +52,16 @@ def get_logged_in_user():
 
 
 def user_is_user_type(user_type):
-    if not settings.USE_AUTH:
-        return True
-    if user_type == g.user_type:
-        return True
-    return False
+    return user_type == g.user_type if settings.USE_AUTH else True
 
 
 def user_is_service(service):
-    if not settings.USE_AUTH:
-        return True
-    if g.username == service:
-        return True
-    return False
+    return g.username == service if settings.USE_AUTH else True
 
 
 def service_in_account(account):
     # We only scope to account, if an account is specified.
-    if not account:
-        return True
-    if g.account == account:
-        return True
-    return False
+    return g.account == account if account else True
 
 
 def account_for_key_alias(key_alias):
@@ -90,9 +78,8 @@ def require_csrf_token(f):
         # for csrf tokens.
         if g.auth_type == 'kms':
             return f(*args, **kwargs)
-        if user_mod.check_csrf_token():
-            return f(*args, **kwargs)
-        return abort(401)
+        return f(*args, **kwargs) if user_mod.check_csrf_token() else abort(401)
+
     return decorated
 
 

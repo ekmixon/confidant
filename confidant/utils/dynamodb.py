@@ -42,7 +42,7 @@ def create_dynamodb_tables():
                 )
             break
         except TableError:
-            i = i + 1
+            i += 1
             time.sleep(2)
 
 
@@ -54,6 +54,8 @@ def encode_last_evaluated_key(last_evaluated_key):
 
 
 def decode_last_evaluated_key(last_evaluated_key):
-    if not last_evaluated_key:
-        return None
-    return json.loads(base64.b64decode(last_evaluated_key))
+    return (
+        json.loads(base64.b64decode(last_evaluated_key))
+        if last_evaluated_key
+        else None
+    )

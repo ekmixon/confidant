@@ -69,6 +69,4 @@ class BlindCredential(Model):
             return False
         if self.metadata != other_cred.metadata:
             return False
-        if self.documentation != other_cred.documentation:
-            return False
-        return True
+        return self.documentation == other_cred.documentation

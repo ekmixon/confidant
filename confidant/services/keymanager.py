@@ -108,8 +108,7 @@ def get_grants():
             grants = auth_kms_client.list_grants(
                 KeyId=get_key_id(settings.AUTH_KEY)
             )
-        for grant in grants['Grants']:
-            _grants.append(grant)
+        _grants.extend(iter(grants['Grants']))
         if 'NextMarker' not in grants:
             break
         else:

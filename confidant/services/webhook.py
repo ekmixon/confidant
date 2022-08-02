@@ -32,6 +32,6 @@ def send_event(event_type, services, credential_ids):
         if response.status_code != 200:
             msg = 'Post to webhook returned non-200 status ({0}).'
             logger.warning(msg.format(response.status_code))
-        logger.warning("webhook triggered: {}".format(event))
+        logger.warning(f"webhook triggered: {event}")
     except Exception as e:
         logger.warning('Failed to post webhook event. {0}'.format(e))

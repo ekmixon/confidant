@@ -63,10 +63,7 @@ class ServiceResponse(object):
             modified_date=service.modified_date,
             modified_by=service.modified_by,
         )
-        if metadata_only:
-            include_sensitive = False
-        else:
-            include_sensitive = True
+        include_sensitive = not metadata_only
         ret.credentials = [
             CredentialResponse.from_credential(
                 credential,

@@ -7,13 +7,12 @@ class NonNullUnicodeSetAttribute(UnicodeSetAttribute):
         Override UnicodeSetAttribute's __get__ method to return a set, rather
         than None if the attribute isn't set.
         '''
-        if instance:
-            # Get the attribute. If the object doesn't have the attribute,
-            # ensure we return a set.
-            _value = instance.attribute_values.get(self.attr_name, set())
-            # Attribute is assigned to None, return a set instead.
-            if _value is None:
-                _value = set()
-            return _value
-        else:
+        if not instance:
             return self
+        # Get the attribute. If the object doesn't have the attribute,
+        # ensure we return a set.
+        _value = instance.attribute_values.get(self.attr_name, set())
+        # Attribute is assigned to None, return a set instead.
+        if _value is None:
+            _value = set()
+        return _value

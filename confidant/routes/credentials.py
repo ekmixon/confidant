@@ -87,16 +87,14 @@ def get_credential_list():
     :statuscode 403: Client does not have permissions to list credentials.
     """
     if not acl_module_check(resource_type='credential', action='list'):
-        msg = "{} does not have access to list credentials".format(
-            authnz.get_logged_in_user()
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to list credentials"
         error_msg = {'error': msg}
         return jsonify(error_msg), 403
 
-    credentials_response = CredentialsResponse.from_credentials([
-        credential
-        for credential in Credential.data_type_date_index.query('credential')
-    ])
+    credentials_response = CredentialsResponse.from_credentials(
+        list(Credential.data_type_date_index.query('credential'))
+    )
+
     return credentials_response_schema.dumps(credentials_response)
 
 
@@ -161,10 +159,7 @@ def get_credential(id):
     if not acl_module_check(resource_type='credential',
                             action='metadata',
                             resource_id=id):
-        msg = "{} does not have access to credential {}".format(
-            authnz.get_logged_in_user(),
-            id
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to credential {id}"
         error_msg = {'error': msg, 'reference': id}
         return jsonify(error_msg), 403
 
@@ -197,14 +192,10 @@ def get_credential(id):
         if settings.ENABLE_SAVE_LAST_DECRYPTION_TIME:
             # Also try to save the archived credential to stay consistent
             try:
-                archived_credential = Credential.get(
-                    '{}-{}'.format(id, credential.revision)
-                )
+                archived_credential = Credential.get(f'{id}-{credential.revision}')
             except DoesNotExist:
                 archived_credential = None
-                logger.error('Archived credential {}-{} not found'.format(
-                        id, credential.revision)
-                )
+                logger.error(f'Archived credential {id}-{credential.revision} not found')
             now = misc.utcnow()
             credential.last_decrypted_date = now
             credential.save()
@@ -304,22 +295,20 @@ def diff_credential(id, old_revision, new_revision):
     if not acl_module_check(resource_type='credential',
                             action='metadata',
                             resource_id=id):
-        msg = "{} does not have access to diff credential {}".format(
-            authnz.get_logged_in_user(),
-            id
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to diff credential {id}"
+
         error_msg = {'error': msg, 'reference': id}
         return jsonify(error_msg), 403
 
     try:
-        old_credential = Credential.get('{}-{}'.format(id, old_revision))
+        old_credential = Credential.get(f'{id}-{old_revision}')
     except DoesNotExist:
         return jsonify({'error': 'Credential not found.'}), 404
     if old_credential.data_type != 'archive-credential':
         msg = 'id provided is not a credential.'
         return jsonify({'error': msg}), 400
     try:
-        new_credential = Credential.get('{}-{}'.format(id, new_revision))
+        new_credential = Credential.get(f'{id}-{new_revision}')
     except DoesNotExist:
         logger.warning(
             'Item with id {0} does not exist.'.format(id)
@@ -388,10 +377,8 @@ def get_archive_credential_revisions(id):
     if not acl_module_check(resource_type='credential',
                             action='metadata',
                             resource_id=id):
-        msg = "{} does not have access to credential {} revisions".format(
-            authnz.get_logged_in_user(),
-            id
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to credential {id} revisions"
+
         error_msg = {'error': msg}
         return jsonify(error_msg), 403
 
@@ -402,8 +389,7 @@ def get_archive_credential_revisions(id):
             'Item with id {0} does not exist.'.format(id)
         )
         return jsonify({}), 404
-    if (cred.data_type != 'credential' and
-            cred.data_type != 'archive-credential'):
+    if cred.data_type not in ['credential', 'archive-credential']:
         return jsonify({}), 404
     revisions_response = RevisionsResponse.from_credentials(
         Credential.batch_get(
@@ -465,9 +451,7 @@ def get_archive_credential_list():
     :statuscode 403: Client does not have permissions to list credentials
     """
     if not acl_module_check(resource_type='credential', action='list'):
-        msg = "{} does not have access to list credentials".format(
-            authnz.get_logged_in_user()
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to list credentials"
         error_msg = {'error': msg}
         return jsonify(error_msg), 403
 
@@ -490,9 +474,9 @@ def get_archive_credential_list():
         last_evaluated_key=page,
     )
     credentials_response = CredentialsResponse.from_credentials(
-        [credential for credential in results],
-        next_page=results.last_evaluated_key,
+        list(results), next_page=results.last_evaluated_key
     )
+
     return credentials_response_schema.dumps(credentials_response)
 
 
@@ -560,9 +544,8 @@ def create_credential():
     :statuscode 403: Client does not have access to create credentials.
     '''
     if not acl_module_check(resource_type='credential', action='create'):
-        msg = "{} does not have access to create credentials".format(
-            authnz.get_logged_in_user()
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to create credentials"
+
         error_msg = {'error': msg}
         return jsonify(error_msg), 403
 
@@ -755,10 +738,8 @@ def update_credential(id):
     if not acl_module_check(resource_type='credential',
                             action='update',
                             resource_id=id):
-        msg = "{} does not have access to update credential {}".format(
-            authnz.get_logged_in_user(),
-            id
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to update credential {id}"
+
         error_msg = {'error': msg, 'reference': id}
         return jsonify(error_msg), 403
 
@@ -808,14 +789,9 @@ def update_credential(id):
         )
         if not _check:
             return jsonify(ret), 400
-        # Ensure credential pairs don't conflicts with pairs from other
-        # services
-        conflicts = servicemanager.pair_key_conflicts_for_services(
-            id,
-            list(credential_pairs.keys()),
-            services
-        )
-        if conflicts:
+        if conflicts := servicemanager.pair_key_conflicts_for_services(
+            id, list(credential_pairs.keys()), services
+        ):
             ret = {
                 'error': 'Conflicting key pairs in mapped service.',
                 'conflicts': conflicts
@@ -953,10 +929,8 @@ def revert_credential_to_revision(id, to_revision):
     if not acl_module_check(resource_type='credential',
                             action='revert',
                             resource_id=id):
-        msg = "{} does not have access to revert credential {}".format(
-            authnz.get_logged_in_user(),
-            id
-        )
+        msg = f"{authnz.get_logged_in_user()} does not have access to revert credential {id}"
+
         error_msg = {'error': msg, 'reference': id}
         return jsonify(error_msg), 403
 
@@ -972,7 +946,7 @@ def revert_credential_to_revision(id, to_revision):
         current_credential.revision
     )
     try:
-        revert_credential = Credential.get('{}-{}'.format(id, to_revision))
+        revert_credential = Credential.get(f'{id}-{to_revision}')
     except DoesNotExist:
         logger.warning(
             'Item with id {0} does not exist.'.format(id)
@@ -994,14 +968,9 @@ def revert_credential_to_revision(id, to_revision):
         )
         if not _check:
             return jsonify(ret), 400
-        # Ensure credential pairs don't conflicts with pairs from other
-        # services
-        conflicts = servicemanager.pair_key_conflicts_for_services(
-            id,
-            list(_credential_pairs.keys()),
-            services
-        )
-        if conflicts:
+        if conflicts := servicemanager.pair_key_conflicts_for_services(
+            id, list(_credential_pairs.keys()), services
+        ):
             ret = {
                 'error': 'Conflicting key pairs in mapped service.',
                 'conflicts': conflicts

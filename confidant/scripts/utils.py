@@ -22,13 +22,14 @@ class ManageGrants(Command):
 
         grants = keymanager.get_grants()
         try:
-            roles = [x for x in iam_resource.roles.all()]
+            roles = list(iam_resource.roles.all())
         except ClientError:
             logger.error('Failed to fetch IAM roles.')
             return
-        services = []
-        for service in Service.data_type_date_index.query('service'):
-            services.append(service.id)
+        services = [
+            service.id for service in Service.data_type_date_index.query('service')
+        ]
+
         for role in roles:
             if role.name in services:
                 logger.info('Managing grants for {0}.'.format(role.name))

@@ -49,7 +49,7 @@ def archive_credential(mocker):
 
 @pytest.fixture()
 def credential_list(mocker):
-    credentials = [
+    return [
         Credential(
             id='1234',
             revision=1,
@@ -79,7 +79,6 @@ def credential_list(mocker):
             documentation='',
         ),
     ]
-    return credentials
 
 
 def test_get_credential_list(mocker, credential_list):
@@ -131,20 +130,11 @@ def test_get_credential(mocker, credential):
 
     def acl_module_check(resource_type, action, resource_id):
         if action == 'metadata':
-            if resource_id == '5678':
-                return False
-            else:
-                return True
+            return resource_id != '5678'
         elif action == 'get':
-            if resource_id == '9012':
-                return False
-            else:
-                return True
+            return resource_id != '9012'
         elif action == 'update':
-            if resource_id == '3456':
-                return True
-            else:
-                return False
+            return resource_id == '3456'
 
     mocker.patch(
         'confidant.routes.credentials.acl_module_check',

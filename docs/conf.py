@@ -82,15 +82,15 @@ extensions = [
     'm2r',
 ]
 extlinks = {
-    'repo': ('https://github.com/lyft/confidant/blob/{}/%s'.format(blob_sha), ''),
-    'api': ('https://github.com/lyft/confidant/blob/{}/api/%s'.format(blob_sha), ''),
+    'repo': (f'https://github.com/lyft/confidant/blob/{blob_sha}/%s', ''),
+    'api': (f'https://github.com/lyft/confidant/blob/{blob_sha}/api/%s', ''),
 }
 
 # Setup global substitutions
 if 'pre-release' in release_level:
-  substitutions = [('|confidant_docker_image|', 'confidant-dev:{}'.format(blob_sha))]
+  substitutions = [('|confidant_docker_image|', f'confidant-dev:{blob_sha}')]
 else:
-  substitutions = [('|confidant_docker_image|', 'confidant:{}'.format(blob_sha))]
+  substitutions = [('|confidant_docker_image|', f'confidant:{blob_sha}')]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -108,7 +108,7 @@ master_doc = 'contents'
 
 # General information about the project.
 project = u'confidant'
-copyright = u'2019-{}, Confidant Project Authors'.format(datetime.now().year)
+copyright = f'2019-{datetime.now().year}, Confidant Project Authors'
 author = u'Confidant Project Authors'
 
 # The version info for the project you're documenting, acts as replacement for

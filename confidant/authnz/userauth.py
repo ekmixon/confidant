@@ -46,7 +46,7 @@ def init_user_auth_class(*args, **kwargs):
                 'Unknown USER_AUTH_MODULE: {!r}'.format(module_name))
 
     auth = module(*args, **kwargs)
-    logger.info('Initializing {} user authenticator'.format(auth.auth_type))
+    logger.info(f'Initializing {auth.auth_type} user authenticator')
     return auth
 
 
@@ -62,20 +62,17 @@ class AbstractUserAuthenticator(object):
         return 'user' in session
 
     def is_expired(self):
-        if 'expiration' in session:
-            # Paranoia case
-            if session.get('max_expiration') is None:
-                logger.warning(
-                    'max_expiration unset on session, when expiration is set.'
-                )
-                return True
-            now = datetime.datetime.utcnow()
-            if now > session['expiration']:
-                return True
-            elif now > session['max_expiration']:
-                return True
-        else:
+        if 'expiration' not in session:
             return False
+        # Paranoia case
+        if session.get('max_expiration') is None:
+            logger.warning(
+                'max_expiration unset on session, when expiration is set.'
+            )
+            return True
+        now = datetime.datetime.utcnow()
+        if now > session['expiration'] or now > session['max_expiration']:
+            return True
 
     def current_user(self):
         return session['user']
@@ -94,25 +91,24 @@ class AbstractUserAuthenticator(object):
     def check_csrf_token(self):
         cookie_name = settings.XSRF_COOKIE_NAME
         token = request.headers.get('X-XSRF-TOKEN', '')
-        if not token:
-            return False
-        return safe_str_cmp(token, session.get(cookie_name, ''))
+        return safe_str_cmp(token, session.get(cookie_name, '')) if token else False
 
     def set_expiration(self):
-        if settings.PERMANENT_SESSION_LIFETIME:
-            session.permanent = True
-            now = datetime.datetime.utcnow()
-            lifetime = settings.PERMANENT_SESSION_LIFETIME
-            expiration = now + datetime.timedelta(seconds=lifetime)
-            session['expiration'] = expiration
-            # We want the max_expiration initially set, but we don't want it to
-            # be extended.
-            if not session.get('max_expiration'):
-                max_lifetime = settings.MAX_PERMANENT_SESSION_LIFETIME
-                if not max_lifetime:
-                    max_lifetime = lifetime
-                max_expiration = now + datetime.timedelta(seconds=max_lifetime)
-                session['max_expiration'] = max_expiration
+        if not settings.PERMANENT_SESSION_LIFETIME:
+            return
+        session.permanent = True
+        now = datetime.datetime.utcnow()
+        lifetime = settings.PERMANENT_SESSION_LIFETIME
+        expiration = now + datetime.timedelta(seconds=lifetime)
+        session['expiration'] = expiration
+        # We want the max_expiration initially set, but we don't want it to
+        # be extended.
+        if not session.get('max_expiration'):
+            max_lifetime = settings.MAX_PERMANENT_SESSION_LIFETIME
+            if not max_lifetime:
+                max_lifetime = lifetime
+            max_expiration = now + datetime.timedelta(seconds=max_lifetime)
+            session['max_expiration'] = max_expiration
 
     def set_current_user(self, email, first_name=None, last_name=None):
         session['user'] = {
@@ -370,14 +366,13 @@ class GoogleOauthAuthenticator(AbstractUserAuthenticator):
 
     def log_in(self):
         response = flask.make_response()
-        result = self.authomatic.login(
+        if result := self.authomatic.login(
             WerkzeugAdapter(request, response),
             'google',
             session=session,
             session_saver=lambda: current_app.save_session(session, response),
-            secure_cookie=(True if request.is_secure else False)
-        )
-        if result:
+            secure_cookie=bool(request.is_secure),
+        ):
             if result.error:
                 msg = 'Google auth failed with error: {0}'
                 logger.error(msg.format(result.error))
@@ -445,17 +440,18 @@ class SamlAuthenticator(AbstractUserAuthenticator):
 
         # Service Provider section
         sp_data = {
-            'entityId': root_url + '/v1/saml/metadata',
+            'entityId': f'{root_url}/v1/saml/metadata',
             'assertionConsumerService': {
-                'url': root_url + '/v1/saml/consume',
-                'binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
+                'url': f'{root_url}/v1/saml/consume',
+                'binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
             },
             'singleLogoutService': {
-                'url': root_url + '/v1/saml/logout',
-                'binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-REDIRECT'
+                'url': f'{root_url}/v1/saml/logout',
+                'binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-REDIRECT',
             },
             'NameIDFormat': name_id_fmt,
         }
+
 
         sp_has_key = False
         if settings.SAML_SP_KEY_FILE:
@@ -598,10 +594,7 @@ class SamlAuthenticator(AbstractUserAuthenticator):
             'session_index': auth.get_session_index()
         }
 
-        kwargs = {}
-
-        # use email from attributes if present, else nameid
-        kwargs['email'] = attributes.get('email', nameid)
+        kwargs = {'email': attributes.get('email', nameid)}
 
         # use first_name, last_name if present
         for key, val in attributes.items():
@@ -678,8 +671,7 @@ class SamlAuthenticator(AbstractUserAuthenticator):
         errors = []
 
         auth.process_slo()
-        errors = auth.get_errors()
-        if errors:
+        if errors := auth.get_errors():
             if clear_session_on_errors:
                 self.clear_session()
 
@@ -704,8 +696,7 @@ class SamlAuthenticator(AbstractUserAuthenticator):
         if req_dict is None:
             req_dict = self._saml_req_dict_from_request()
 
-        auth = OneLogin_Saml2_Auth(req_dict, self.saml_config)
-        return auth
+        return OneLogin_Saml2_Auth(req_dict, self.saml_config)
 
     def _saml_req_dict_from_request(self, flask_request=None):
         """
@@ -723,9 +714,11 @@ class SamlAuthenticator(AbstractUserAuthenticator):
 
         url_data = urlparse(flask_request.url)
 
-        if flask_request.scheme == 'https':
-            https = 'on'
-        elif current_app.debug and settings.SAML_FAKE_HTTPS:
+        if (
+            flask_request.scheme == 'https'
+            or current_app.debug
+            and settings.SAML_FAKE_HTTPS
+        ):
             https = 'on'
         else:
             https = 'off'
@@ -759,9 +752,7 @@ class SamlAuthenticator(AbstractUserAuthenticator):
         auth = self._saml_auth()
         settings = auth.get_settings()
         metadata = settings.get_sp_metadata()
-        errors = settings.validate_metadata(metadata)
-
-        if errors:
+        if errors := settings.validate_metadata(metadata):
             resp = flask.make_response(errors.join(', '), 500)
             resp.headers['Content-Type'] = 'text/plain'
         else:

@@ -93,20 +93,22 @@ def custom_modules(path):
 @blueprint.route('/custom/styles/<path:path>')
 @authnz.require_auth
 def custom_styles(path):
-    if not settings.CUSTOM_FRONTEND_DIRECTORY:
-        return '', 404
-    return send_from_directory(
-        os.path.join(settings.CUSTOM_FRONTEND_DIRECTORY, 'styles'),
-        path
+    return (
+        send_from_directory(
+            os.path.join(settings.CUSTOM_FRONTEND_DIRECTORY, 'styles'), path
+        )
+        if settings.CUSTOM_FRONTEND_DIRECTORY
+        else ('', 404)
     )
 
 
 @blueprint.route('/custom/images/<path:path>')
 @authnz.require_auth
 def custom_images(path):
-    if not settings.CUSTOM_FRONTEND_DIRECTORY:
-        return '', 404
-    return send_from_directory(
-        os.path.join(settings.CUSTOM_FRONTEND_DIRECTORY, 'images'),
-        path
+    return (
+        send_from_directory(
+            os.path.join(settings.CUSTOM_FRONTEND_DIRECTORY, 'images'), path
+        )
+        if settings.CUSTOM_FRONTEND_DIRECTORY
+        else ('', 404)
     )

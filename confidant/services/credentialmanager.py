@@ -11,13 +11,13 @@ from confidant.models.blind_credential import BlindCredential
 def get_credentials(credential_ids):
     with stats.timer('service_batch_get_credentials'):
         _credential_ids = copy.deepcopy(credential_ids)
-        return [cred for cred in Credential.batch_get(_credential_ids)]
+        return list(Credential.batch_get(_credential_ids))
 
 
 def get_blind_credentials(credential_ids, metadata_only=False):
     with stats.timer('service_batch_get_blind_credentials'):
         _credential_ids = copy.deepcopy(credential_ids)
-        return [cred for cred in BlindCredential.batch_get(_credential_ids)]
+        return list(BlindCredential.batch_get(_credential_ids))
 
 
 def pair_key_conflicts_for_credentials(credential_ids, blind_credential_ids):
@@ -56,7 +56,7 @@ def pair_key_conflicts_for_credentials(credential_ids, blind_credential_ids):
 
 def check_credential_pair_values(credential_pairs):
     for key, val in credential_pairs.items():
-        if isinstance(val, dict) or isinstance(val, list):
+        if isinstance(val, (dict, list)):
             ret = {'error': 'credential pairs must be key: value'}
             return (False, ret)
     return (True, {})
@@ -71,10 +71,7 @@ def get_revision_ids_for_credential(credential):
     For the given credential, return a list of archive credential IDs.
     """
     _range = range(1, credential.revision + 1)
-    ids = []
-    for i in _range:
-        ids.append("{0}-{1}".format(credential.id, i))
-    return ids
+    return ["{0}-{1}".format(credential.id, i) for i in _range]
 
 
 def get_latest_credential_revision(id, revision):

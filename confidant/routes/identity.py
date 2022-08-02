@@ -124,16 +124,17 @@ def get_client_config():
     tags = set()
     tags.update(settings.TAGS_EXCLUDING_ROTATION)
     tags.update(settings.ROTATION_DAYS_CONFIG.keys())
-    response = jsonify({
-        'defined': settings.CLIENT_CONFIG,
-        'generated': {
-            'kms_auth_manage_grants': settings.KMS_AUTH_MANAGE_GRANTS,
-            'aws_accounts': list(settings.SCOPED_AUTH_KEYS.values()),
-            'xsrf_cookie_name': settings.XSRF_COOKIE_NAME,
-            'maintenance_mode': settings.MAINTENANCE_MODE,
-            'history_page_limit': settings.HISTORY_PAGE_LIMIT,
-            'defined_tags': list(tags),
-            'permissions': permissions,
+    return jsonify(
+        {
+            'defined': settings.CLIENT_CONFIG,
+            'generated': {
+                'kms_auth_manage_grants': settings.KMS_AUTH_MANAGE_GRANTS,
+                'aws_accounts': list(settings.SCOPED_AUTH_KEYS.values()),
+                'xsrf_cookie_name': settings.XSRF_COOKIE_NAME,
+                'maintenance_mode': settings.MAINTENANCE_MODE,
+                'history_page_limit': settings.HISTORY_PAGE_LIMIT,
+                'defined_tags': list(tags),
+                'permissions': permissions,
+            },
         }
-    })
-    return response
+    )

@@ -27,17 +27,21 @@ acl_module_check = misc.load_module(settings.ACL_MODULE)
 @blueprint.route('/v1/blind_credentials', methods=['GET'])
 @authnz.require_auth
 def get_blind_credential_list():
-    blind_credentials = []
-    for cred in BlindCredential.data_type_date_index.query('blind-credential'):
-        blind_credentials.append({
+    blind_credentials = [
+        {
             'id': cred.id,
             'name': cred.name,
             'revision': cred.revision,
             'enabled': cred.enabled,
             'modified_date': cred.modified_date,
             'modified_by': cred.modified_by,
-            'documentation': cred.documentation
-        })
+            'documentation': cred.documentation,
+        }
+        for cred in BlindCredential.data_type_date_index.query(
+            'blind-credential'
+        )
+    ]
+
     return jsonify({'blind_credentials': blind_credentials})
 
 
@@ -51,8 +55,7 @@ def get_blind_credential(id):
             'Item with id {0} does not exist.'.format(id)
         )
         return jsonify({}), 404
-    if (cred.data_type != 'blind-credential' and
-            cred.data_type != 'archive-blind-credential'):
+    if cred.data_type not in ['blind-credential', 'archive-blind-credential']:
         return jsonify({}), 404
     return jsonify({
         'id': cred.id,
@@ -78,19 +81,15 @@ def get_archive_blind_credential_revisions(id):
         cred = BlindCredential.get(id)
     except DoesNotExist:
         return jsonify({}), 404
-    if (cred.data_type != 'blind-credential' and
-            cred.data_type != 'archive-blind-credential'):
+    if cred.data_type not in ['blind-credential', 'archive-blind-credential']:
         logger.warning(
             'Item with id {0} does not exist.'.format(id)
         )
         return jsonify({}), 404
-    revisions = []
     _range = range(1, cred.revision + 1)
-    ids = []
-    for i in _range:
-        ids.append("{0}-{1}".format(id, i))
-    for revision in BlindCredential.batch_get(ids):
-        revisions.append({
+    ids = ["{0}-{1}".format(id, i) for i in _range]
+    revisions = [
+        {
             'id': cred.id,
             'name': cred.name,
             'credential_pairs': cred.credential_pairs,
@@ -103,8 +102,11 @@ def get_archive_blind_credential_revisions(id):
             'data_key': cred.data_key,
             'modified_date': cred.modified_date,
             'modified_by': cred.modified_by,
-            'documentation': cred.documentation
-        })
+            'documentation': cred.documentation,
+        }
+        for _ in BlindCredential.batch_get(ids)
+    ]
+
     return jsonify({
         'revisions': sorted(
             revisions,
@@ -129,15 +131,14 @@ def get_archive_blind_credential_list():
         except Exception:
             logger.exception('Failed to parse provided page')
             return jsonify({'error': 'Failed to parse page'}), 400
-    blind_credentials = []
     results = BlindCredential.data_type_date_index.query(
         'archive-blind-credential',
         scan_index_forward=False,
         limit=limit,
         last_evaluated_key=page,
     )
-    for cred in results:
-        blind_credentials.append({
+    blind_credentials = [
+        {
             'id': cred.id,
             'name': cred.name,
             'credential_pairs': cred.credential_pairs,
@@ -150,12 +151,16 @@ def get_archive_blind_credential_list():
             'data_key': cred.data_key,
             'modified_date': cred.modified_date,
             'modified_by': cred.modified_by,
-            'documentation': cred.documentation
-        })
-    credential_list = {'blind_credentials': blind_credentials}
-    credential_list['next_page'] = encode_last_evaluated_key(
-        results.last_evaluated_key
-    )
+            'documentation': cred.documentation,
+        }
+        for cred in results
+    ]
+
+    credential_list = {
+        'blind_credentials': blind_credentials,
+        'next_page': encode_last_evaluated_key(results.last_evaluated_key),
+    }
+
     return jsonify(credential_list)
 
 
@@ -165,15 +170,11 @@ def get_archive_blind_credential_list():
 @maintenance.check_maintenance_mode
 def create_blind_credential():
     data = request.get_json()
-    missing = []
     required_args = ['cipher_version', 'cipher_type', 'credential_pairs',
                      'data_key']
     if settings.get('ENFORCE_DOCUMENTATION'):
         required_args.append('documentation')
-    for arg in required_args:
-        if not data.get(arg):
-            missing.append(arg)
-    if missing:
+    if missing := [arg for arg in required_args if not data.get(arg)]:
         return jsonify({
             'error': 'The following fields are required: {0}'.format(missing)
         }), 400

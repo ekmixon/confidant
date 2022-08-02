@@ -83,22 +83,15 @@ def get_certificate(ca, cn):
             'san': san,
         },
     ):
-        msg = ('{} does not have access to get certificate cn {} against'
-               ' ca {}').format(
-            authnz.get_logged_in_user(),
-            cn,
-            ca,
-        )
+        msg = f'{authnz.get_logged_in_user()} does not have access to get certificate cn {cn} against ca {ca}'
+
         error_msg = {'error': msg, 'reference': cn}
         return jsonify(error_msg), 403
 
     logger.info(
-        'get_certificate called on id={} for ca={} by user={}'.format(
-            cn,
-            ca,
-            logged_in_user,
-        )
+        f'get_certificate called on id={cn} for ca={ca} by user={logged_in_user}'
     )
+
 
     validity = request.args.get(
         'validity',
@@ -206,22 +199,15 @@ def get_certificate_from_csr(ca):
             'san': san,
         },
     ):
-        msg = ('{} does not have access to get certificate cn {} against'
-               ' ca {}').format(
-            authnz.get_logged_in_user(),
-            cn,
-            ca,
-        )
+        msg = f'{authnz.get_logged_in_user()} does not have access to get certificate cn {cn} against ca {ca}'
+
         error_msg = {'error': msg, 'reference': cn}
         return jsonify(error_msg), 403
 
     logger.info(
-        'get_certificate called on id={} for ca={} by user={}'.format(
-            cn,
-            ca,
-            logged_in_user,
-        )
+        f'get_certificate called on id={cn} for ca={ca} by user={logged_in_user}'
     )
+
 
     arn = ca_object.issue_certificate(data['csr'], validity)
     certificate = ca_object.get_certificate_from_arn(arn)
@@ -276,15 +262,13 @@ def list_cas():
         resource_type='ca',
         action='list',
     ):
-        msg = '{} does not have access to list cas'.format(
-            authnz.get_logged_in_user(),
-        )
+        msg = f'{authnz.get_logged_in_user()} does not have access to list cas'
         error_msg = {'error': msg}
         return jsonify(error_msg), 403
 
     cas = certificatemanager.list_cas()
 
-    logger.info('list_cas called by user={}'.format(logged_in_user))
+    logger.info(f'list_cas called by user={logged_in_user}')
 
     cas_response = CertificateAuthoritiesResponse.from_cas(cas)
     return certificate_authorities_response_schema.dumps(cas_response)
@@ -340,19 +324,11 @@ def get_ca(ca):
         action='get',
         resource_id=ca,
     ):
-        msg = '{} does not have access to get ca {}'.format(
-            authnz.get_logged_in_user(),
-            ca,
-        )
+        msg = f'{authnz.get_logged_in_user()} does not have access to get ca {ca}'
         error_msg = {'error': msg, 'reference': ca}
         return jsonify(error_msg), 403
 
-    logger.info(
-        'get_ca called on id={} by user={}'.format(
-            ca,
-            logged_in_user,
-        )
-    )
+    logger.info(f'get_ca called on id={ca} by user={logged_in_user}')
 
     _ca = ca_object.get_certificate_authority_certificate()
     ca_response = CertificateAuthorityResponse(
