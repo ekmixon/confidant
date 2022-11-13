@@ -16,7 +16,7 @@ cffi==1.12.3              # via -r ./requirements.in, cryptography
 chardet==3.0.4            # via requests
 click==7.0                # via flask
 coverage==4.5.4           # via pytest-cov
-cryptography==2.7         # via -r ./requirements.in, pyopenssl
+cryptography==3.2         # via -r ./requirements.in, pyopenssl
 defusedxml==0.6.0         # via python3-saml
 docutils==0.15.2          # via botocore
 flask-script==2.0.5       # via -r ./requirements.in
@@ -36,7 +36,7 @@ jinja2==2.11.3            # via flask
 jmespath==0.9.4           # via boto3, botocore
 kmsauth==0.6.0            # via -r ./requirements.in
 lru-dict==1.1.6           # via -r ./requirements.in
-lxml==4.6.3               # via xmlsec
+lxml==4.9.1               # via xmlsec
 markupsafe==1.1.1         # via jinja2
 more-itertools==8.0.2     # via zipp
 ndg-httpsclient==0.5.1    # via -r ./requirements.in
