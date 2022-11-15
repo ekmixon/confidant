@@ -43,7 +43,7 @@ ndg-httpsclient==0.5.1    # via -r ./requirements.in
 packaging==20.0           # via pytest
 pkgconfig==1.5.1          # via xmlsec
 pluggy==0.13.1            # via pytest
-py==1.8.1                 # via pytest
+py==1.10.0                 # via pytest
 pyasn1==0.4.6             # via -r ./requirements.in, ndg-httpsclient
 pycparser==2.19           # via cffi
 pynamodb==3.4.1           # via -r ./requirements.in
