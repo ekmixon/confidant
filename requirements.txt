@@ -24,7 +24,7 @@ flask-script==2.0.5       # via -r ./requirements.in
 flask-session==0.2.3      # via -r ./requirements.in
 flask-sslify==0.1.5       # via -r ./requirements.in
 flask==1.1.1              # via -r ./requirements.in, flask-script, flask-session, flask-sslify
-gevent==1.4.0             # via -r ./requirements.in, pytest-gevent
+gevent==23.9.0             # via -r ./requirements.in, pytest-gevent
 greenlet==0.4.15          # via -r ./requirements.in, gevent
 guard==1.0.1              # via -r ./requirements.in
 gunicorn==19.9.0          # via -r ./requirements.in
