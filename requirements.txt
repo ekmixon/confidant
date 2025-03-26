@@ -27,7 +27,7 @@ flask==1.1.1              # via -r ./requirements.in, flask-script, flask-sessio
 gevent==1.4.0             # via -r ./requirements.in, pytest-gevent
 greenlet==0.4.15          # via -r ./requirements.in, gevent
 guard==1.0.1              # via -r ./requirements.in
-gunicorn==19.9.0          # via -r ./requirements.in
+gunicorn==23.0.0          # via -r ./requirements.in
 idna==2.8                 # via requests
 importlib-metadata==1.3.0  # via pluggy, pytest
 isodate==0.6.0            # via python3-saml
